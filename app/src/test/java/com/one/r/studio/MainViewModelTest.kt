@@ -17,6 +17,5 @@ class MainViewModelTest {
     @Test
     fun sanity(){
         assertEquals("12345",sut.getHeadBlock());
-
     }
 }
