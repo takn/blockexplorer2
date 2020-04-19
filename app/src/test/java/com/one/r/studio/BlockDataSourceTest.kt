@@ -1,8 +1,8 @@
 package com.one.r.studio
 
 import com.nhaarman.mockitokotlin2.*
-import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runBlockingTest
+import one.block.eosiojava.error.rpcProvider.GetBlockRpcError
 import one.block.eosiojava.interfaces.IRPCProvider
 import one.block.eosiojava.models.rpcProvider.request.GetBlockRequest
 import one.block.eosiojava.models.rpcProvider.response.GetBlockResponse
@@ -12,13 +12,15 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.math.BigInteger
+import kotlin.test.assertFailsWith
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BlockDataSourceTest {
-    @Rule
-    private val testCoroutineRule = TestCoroutineRule();
+//    @Rule
+//    private val testCoroutineRule = TestCoroutineRule();
+
     private val expectedBlockNum = BigInteger.valueOf(12345)
-    private val requestBlockId = BigInteger.valueOf(1)
+    private val requestBlockNum = BigInteger.valueOf(1)
 
     private val blockRequest = mock<GetBlockRequest> {
         on { blockNumOrId } doReturn expectedBlockNum.toString()
@@ -36,24 +38,21 @@ class BlockDataSourceTest {
         on { info } doReturn info
         on { getBlock(any()) } doReturn blockResponse
     }
-    private val sut = BlockDataSource(mockRequestFactory, rpcMock)
+    private val sut = BlockDataSource(rpcMock, mockRequestFactory)
 
     @Test
-    fun `can get head block num`() {
-        runBlockingTest {
-            var result = sut.getHeadBlock()
-            assertEquals(expectedBlockNum, result)
-        }
-
+    fun `can get head block num`() = runBlockingTest {
+        var result = sut.getHeadBlock()
+        assertEquals(expectedBlockNum, result)
     }
+
 
     @Test
-    fun `can get block`() {
-        runBlockingTest {
-            var result = sut.getBlock(requestBlockId)
-            assertEquals(expectedBlockNum, result.blockNum)
-        }
+    fun `can get single block by block number`() = runBlockingTest {
+        var result = sut.getBlock(requestBlockNum)
+        assertEquals(expectedBlockNum, result.blockNum)
     }
+
 
     @Test
     fun `can get list of blocks`() {
@@ -82,42 +81,17 @@ class BlockDataSourceTest {
             verify(mockRequestFactory).getBlockRequest(expectedBlockNum)
         }
     }
-}
 
-interface EOSIODataSource {
-    suspend fun getNBlocksFromBlock(blockNum: BigInteger, count: Int): List<GetBlockResponse>
-}
-
-open class BlockRequestFactory {
-    open fun getBlockRequest(blockNum: BigInteger): GetBlockRequest {
-        return GetBlockRequest(blockNum.toString())
-    }
-}
-
-class BlockDataSource(
-    var requestFactory: BlockRequestFactory = BlockRequestFactory(),
-    val rpcProvider: IRPCProvider
-) :
-    EOSIODataSource {
-    suspend fun getHeadBlock(): BigInteger {
-        return rpcProvider.info.headBlockNum
-    }
-
-    suspend fun getBlock(blockNum: BigInteger): GetBlockResponse {
-        return rpcProvider.getBlock(requestFactory.getBlockRequest(blockNum))
-    }
-
-    override suspend fun getNBlocksFromBlock(
-        blockNum: BigInteger,
-        count: Int
-    ): List<GetBlockResponse> {
-        val deferred = mutableListOf<Deferred<GetBlockResponse>>()
-        coroutineScope {
-            val block = blockNum.toInt()
-            for (x in block downTo (block - (count - 1)) step 1) {
-                deferred.add(async { getBlock(x.toBigInteger()) })
-            }
+    @Test
+    internal fun `block not found throws error`() {
+        val req1 = GetBlockRequest(expectedBlockNum.toString())
+        whenever(mockRequestFactory.getBlockRequest(eq(expectedBlockNum)))
+            .thenReturn(req1)
+        whenever(rpcMock.getBlock(eq(req1))).thenThrow(GetBlockRpcError())
+        runBlockingTest {
+            assertFailsWith<GetBlockRpcError> { sut.getBlock(expectedBlockNum) }
         }
-        return deferred.awaitAll()
+
     }
 }
+
