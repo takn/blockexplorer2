@@ -7,7 +7,6 @@ import one.block.eosiojava.interfaces.IRPCProvider
 import one.block.eosiojava.models.rpcProvider.request.GetBlockRequest
 import one.block.eosiojava.models.rpcProvider.response.GetBlockResponse
 import one.block.eosiojava.models.rpcProvider.response.GetInfoResponse
-import org.junit.Rule
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -16,9 +15,6 @@ import kotlin.test.assertFailsWith
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BlockDataSourceTest {
-//    @Rule
-//    private val testCoroutineRule = TestCoroutineRule();
-
     private val expectedBlockNum = BigInteger.valueOf(12345)
     private val requestBlockNum = BigInteger.valueOf(1)
 

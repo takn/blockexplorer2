@@ -7,7 +7,8 @@ import one.block.eosiojava.models.rpcProvider.response.GetBlockResponse
 import java.math.BigInteger
 
 interface EOSIODataSource {
-    suspend fun getNBlocksFromBlock(blockNum: BigInteger, count: Int): List<GetBlockResponse>
+    suspend fun getHeadBlock(): BigInteger
+    suspend fun getNBlocksFromBlock(blockNum: BigInteger, blockCount: Int): List<GetBlockResponse>
 }
 
 open class BlockRequestFactory {
@@ -23,7 +24,7 @@ class BlockDataSource(
     var requestFactory: BlockRequestFactory = BlockRequestFactory()
 ) :
     EOSIODataSource {
-    suspend fun getHeadBlock(): BigInteger {
+    override suspend fun getHeadBlock(): BigInteger {
         return rpcProvider.info.headBlockNum
     }
 
