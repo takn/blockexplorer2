@@ -28,7 +28,7 @@ class BlockDataSource(
         return rpcProvider.info.headBlockNum
     }
 
-    suspend fun getBlock(blockNum: BigInteger): GetBlockResponse {
+    fun getBlock(blockNum: BigInteger): GetBlockResponse {
         return rpcProvider.getBlock(requestFactory.getBlockRequest(blockNum))
     }
 
