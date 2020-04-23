@@ -4,6 +4,7 @@ import androidx.lifecycle.*
 import com.one.r.studio.BlockDataSource
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import one.block.eosiojava.models.rpcProvider.response.GetBlockResponse
 import one.block.eosiojavarpcprovider.implementations.EosioJavaRpcProviderImpl
@@ -14,37 +15,25 @@ class MainViewModel(
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
-    val _headBlock: MutableLiveData<BigInteger> = MutableLiveData()
-    val headblock: LiveData<BigInteger> = _headBlock
-    val _blocks: MutableLiveData<List<GetBlockResponse>> = MutableLiveData()
+    private val _headBlock: MutableLiveData<BigInteger> = MutableLiveData()
+    private val _blocks: MutableLiveData<List<GetBlockResponse>> = MutableLiveData()
+    val headBlock: LiveData<BigInteger> = _headBlock
     val blocks: LiveData<List<GetBlockResponse>> = _blocks
-
-//hmmmm when this needs to be refreshed, how do you do it?
-//    val blocks2: LiveData<List<GetBlockResponse>> = liveData(defaultDispatcher) {
-//        currentHeadblock = blockDataSource.getHeadBlock();
-//        emit(blockDataSource.getNBlocksFromBlock(currentHeadblock, 20))
-//    }
-
-//    var currentHeadblock = 1.toBigInteger()
-
-//    suspend fun getCurrentHeadBlock(): BigInteger {
-//        viewModelScope.launch(defaultDispatcher) {
-//            currentHeadblock = blockDataSource.getHeadBlock();
-//        }
-//        return currentHeadblock;
-//    }
-
-    suspend fun getNBlocksFromBlock(blockNum: BigInteger, count: Int) {
-        viewModelScope.launch(defaultDispatcher) {
-            _blocks.postValue(blockDataSource.getNBlocksFromBlock(blockNum, count))
-        }
-    }
 
     fun refreshBlocks() {
         viewModelScope.launch(defaultDispatcher) {
             val hb = blockDataSource.getHeadBlock()
-            _blocks.postValue(blockDataSource.getNBlocksFromBlock(hb, 20))
             _headBlock.postValue(hb)
+            _blocks.postValue(blockDataSource.getNBlocksFromBlock(hb, 20))
+        }
+    }
+
+    fun updateCurrentBlock() {
+        viewModelScope.launch(defaultDispatcher) {
+            while (true) {
+                delay(1000L)
+                _headBlock.postValue(blockDataSource.getHeadBlock())
+            }
         }
     }
 }
@@ -54,7 +43,7 @@ object MainViewModelFactory : ViewModelProvider.Factory {
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
         return MainViewModel(
             BlockDataSource(
-                EosioJavaRpcProviderImpl("https://api.testnet.eos.io")
+                EosioJavaRpcProviderImpl("https://api.jungle.alohaeos.com")
             ),
             Dispatchers.IO
         ) as T

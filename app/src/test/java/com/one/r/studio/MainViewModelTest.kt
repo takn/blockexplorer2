@@ -21,33 +21,44 @@ class MainViewModelTest {
     private val dispatcher = TestCoroutineDispatcher()
     private val rpcProviderImpl =
         BlockDataSource(
-            EosioJavaRpcProviderImpl("https://api.testnet.eos.io")
+            EosioJavaRpcProviderImpl("https://api.jungle.alohaeos.com")
         )
     private val sut = MainViewModel(rpcProviderImpl, dispatcher)
     @Test
     fun sanity() {
-        runBlockingTest {
-            assertTrue(sut.getCurrentHeadBlock() > 1.toBigInteger())
+        sut.headBlock.observeForTesting {
+            runBlockingTest {
+                sut.updateCurrentBlock()
+                sut.headBlock.value?.let {
+                    assertTrue(it > 1.toBigInteger())
+                }
+            }
         }
     }
 
     @Test
     fun `head block live data updates`() {
-        sut.headblock.observeForTesting {
-            assertTrue(sut.headblock.value!! > 1.toBigInteger())
+        sut.headBlock.observeForTesting {
+            runBlockingTest {
+                sut.headBlock.value?.let {
+                    assertTrue(it > 1.toBigInteger())
+                }
+            }
         }
     }
 
     @Test
     internal fun `can get last 20 blocks`() {
         val blocksToFetch = 20
-        runBlockingTest {
-            val headBlock = sut.getCurrentHeadBlock()
-            val expectedLastBlock = headBlock - (blocksToFetch - 1).toBigInteger()
-            sut.getNBlocksFromBlock(headBlock, blocksToFetch)
-            val blocksLiveData = sut.blocks.getOrAwaitValue()
-            assertEquals(blocksToFetch, blocksLiveData.size)
-            assertEquals(expectedLastBlock, blocksLiveData[blocksLiveData.size - 1].blockNum)
+        sut.blocks.observeForTesting {
+            runBlockingTest {
+                sut.refreshBlocks()
+                val headBlock = sut.headBlock.getOrAwaitValue()
+                val expectedLastBlock = headBlock - (blocksToFetch - 1).toBigInteger()
+                val blocksLiveData = sut.blocks.getOrAwaitValue()
+                assertEquals(blocksToFetch, blocksLiveData.size)
+                assertEquals(expectedLastBlock, blocksLiveData[blocksLiveData.size - 1].blockNum)
+            }
         }
     }
 }
