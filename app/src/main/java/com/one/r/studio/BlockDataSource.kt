@@ -20,17 +20,14 @@ open class BlockRequestFactory {
 }
 
 class BlockDataSource(
-    val rpcProvider: IRPCProvider,
+    private val rpcProvider: IRPCProvider,
     var requestFactory: BlockRequestFactory = BlockRequestFactory()
 ) :
     EOSIODataSource {
-    override suspend fun getHeadBlock(): BigInteger {
-        return rpcProvider.info.headBlockNum
-    }
+    override suspend fun getHeadBlock(): BigInteger = rpcProvider.info.headBlockNum
 
-    fun getBlock(blockNum: BigInteger): GetBlockResponse {
-        return rpcProvider.getBlock(requestFactory.getBlockRequest(blockNum))
-    }
+    fun getBlock(blockNum: BigInteger): GetBlockResponse =
+        rpcProvider.getBlock(requestFactory.getBlockRequest(blockNum))
 
     override suspend fun getNBlocksFromBlock(
         blockNum: BigInteger,
